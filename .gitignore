@@ -83,3 +83,7 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
 # End of https://www.toptal.com/developers/gitignore/api/unity
+
+# Local planning note script
+/Assets/Script/Mini5.cs
+/Assets/Script/Mini5.cs.meta
