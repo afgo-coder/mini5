@@ -58,6 +58,8 @@ public class GameManager : MonoBehaviour
         public Collider2D bodyCollider;
         public SpriteRenderer[] spriteRenderers;
         public Color[] originalSpriteColors;
+        public Animator animator;
+        public string lastAnimationState;
         public Vector3 velocity;
         public Vector3 spawnPosition;
         public float horizontalInput;
@@ -291,6 +293,7 @@ public class GameManager : MonoBehaviour
             runtime.spawnPosition = runtime.transform.position;
             runtime.currentHealth = maxHealth;
             runtime.spriteRenderers = rig.actor.GetComponentsInChildren<SpriteRenderer>(true);
+            runtime.animator = rig.actor.GetComponentInChildren<Animator>();
             runtime.originalSpriteColors = new Color[runtime.spriteRenderers.Length];
 
             for (int i = 0; i < runtime.spriteRenderers.Length; i++)
@@ -361,6 +364,7 @@ public class GameManager : MonoBehaviour
             runtime.heavyPressed = false;
             ApplyFacing(runtime);
             debugState = runtime.state;
+            UpdateAnimator(runtime);
             LogStateChange(rig, runtime);
             return;
         }
@@ -414,6 +418,7 @@ public class GameManager : MonoBehaviour
         ApplyMovement(runtime);
 
         debugState = runtime.state;
+        UpdateAnimator(runtime);
         LogStateChange(rig, runtime);
 
         runtime.jumpPressed = false;
@@ -740,6 +745,49 @@ public class GameManager : MonoBehaviour
                     ? runtime.originalSpriteColors[i]
                     : new Color(0.55f, 0.55f, 0.55f, runtime.originalSpriteColors[i].a);
             }
+        }
+    }
+
+    private void UpdateAnimator(FighterRuntime runtime)
+    {
+        if (runtime.animator == null)
+        {
+            return;
+        }
+
+        string animationState = GetAnimationStateName(runtime.state);
+
+        if (string.IsNullOrEmpty(animationState) || runtime.lastAnimationState == animationState)
+        {
+            return;
+        }
+
+        runtime.animator.Play(animationState, 0, 0f);
+        runtime.lastAnimationState = animationState;
+    }
+
+    private string GetAnimationStateName(FighterState state)
+    {
+        switch (state)
+        {
+            case FighterState.Move:
+                return "Player_Walk";
+            case FighterState.Jump:
+            case FighterState.JumpLightAttack:
+            case FighterState.JumpHeavyAttack:
+                return "Player_Jump";
+            case FighterState.LightAttack:
+                return "Player_LightAtk";
+            case FighterState.HeavyAttack:
+                return "Player_HeavyAtk";
+            case FighterState.Hit:
+                return "Player_Hit";
+            case FighterState.Lose:
+                return "Player_KO";
+            case FighterState.Win:
+            case FighterState.Idle:
+            default:
+                return "Player_Idle";
         }
     }
 
@@ -1183,8 +1231,10 @@ public class GameManager : MonoBehaviour
         runtime.facing = facing;
         runtime.state = FighterState.Idle;
         runtime.previousLoggedState = FighterState.Idle;
+        runtime.lastAnimationState = string.Empty;
         SetFighterBlinkTint(runtime, true);
         ApplyFacing(runtime);
+        UpdateAnimator(runtime);
     }
 
     private FighterRuntime GetWinnerByHealthZero()
